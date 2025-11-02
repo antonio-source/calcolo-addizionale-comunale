@@ -7,7 +7,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,14 +19,19 @@ public class DataLoaderRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataLoaderRunner.class);
     private final CalcolaAddizionaleComunaleService service;
+    private final JdbcTemplate jdbcTemplate;
 
-    public DataLoaderRunner(CalcolaAddizionaleComunaleService service) {
+    public DataLoaderRunner(CalcolaAddizionaleComunaleService service, JdbcTemplate jdbcTemplate) {
         this.service = service;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         log.info("### STARTING DATA PRE-LOADING ###");
+
+        cleanupDatabase();
 
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources("classpath:csv/aliquote-addizionali-comunali/Add_comunale_irpef*.csv");
@@ -61,5 +68,16 @@ public class DataLoaderRunner implements CommandLineRunner {
             }
         }
         log.info("### DATA PRE-LOADING FINISHED ###");
+    }
+
+    private void cleanupDatabase() {
+        log.info("Cleaning up database tables before loading new data...");
+        // Esegui le cancellazioni in ordine inverso rispetto alle dipendenze delle chiavi esterne
+        jdbcTemplate.execute("DELETE FROM file_comuni_implementati");
+        jdbcTemplate.execute("DELETE FROM file_comuni_scartati");
+        jdbcTemplate.execute("DELETE FROM aliquota_fascia");
+        jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali");
+        jdbcTemplate.execute("DELETE FROM dati_comune");
+        log.info("Database cleanup complete.");
     }
 }
