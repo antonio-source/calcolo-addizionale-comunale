@@ -1,6 +1,7 @@
 package it.pensioni.calcoloaddizionalecomunale.dto;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -34,6 +35,10 @@ public class DatiComune implements Serializable {
     private List<AliquotaFascia> aliquote = new ArrayList<>();
 
     public DatiComune() {
+    }
+
+    public DatiComune(DatiComuneId id) {
+        this.id = id;
     }
 
     // Getters and Setters

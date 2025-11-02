@@ -9,8 +9,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.transaction.Transactional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,11 +27,9 @@ public class DataLoaderRunner implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
+    @Transactional(value = Transactional.TxType.REQUIRED, rollbackOn = Exception.class)
     public void run(String... args) throws Exception {
         log.info("### STARTING DATA PRE-LOADING ###");
-
-        cleanupDatabase();
 
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources("classpath:csv/aliquote-addizionali-comunali/Add_comunale_irpef*.csv");
@@ -57,7 +55,7 @@ public class DataLoaderRunner implements CommandLineRunner {
                     try {
                         int year = Integer.parseInt(matcher.group(1));
                         log.info("-> Loading data for year: {}", year);
-                        service.caricaFileAliquotePerAnno(year);
+                        service.caricaFileAliquotePerAnno(year, null);
                         log.info("-> Successfully loaded data for year: {}", year);
                     } catch (NumberFormatException e) {
                         log.error("Could not parse year from filename: {}", filename, e);
@@ -70,12 +68,5 @@ public class DataLoaderRunner implements CommandLineRunner {
         log.info("### DATA PRE-LOADING FINISHED ###");
     }
 
-    private void cleanupDatabase() {
-        log.info("Cleaning up database tables before loading new data...");
-        // Esegui le cancellazioni in ordine inverso rispetto alle dipendenze delle chiavi esterne
-        jdbcTemplate.execute("DELETE FROM aliquota_fascia");
-        jdbcTemplate.execute("DELETE FROM dati_comune");
-        jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali");
-        log.info("Database cleanup complete.");
-    }
+
 }

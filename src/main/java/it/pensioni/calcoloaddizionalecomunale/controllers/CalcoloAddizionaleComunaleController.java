@@ -38,7 +38,7 @@ public class CalcoloAddizionaleComunaleController {
 
     @GetMapping("/carica-file")
     public String caricaFileAliquotePerAnno(int annoCalcolo) {
-        calcolaAddizionaleComunaleService.caricaFileAliquotePerAnno(annoCalcolo);
+        calcolaAddizionaleComunaleService.caricaFileAliquotePerAnno(annoCalcolo, null);
 
         long implementatiCount = datiComuneRepository.countById_AnnoRiferimentoAndStato(annoCalcolo, StatoComune.IMPLEMENTATO);
         long scartatiCount = datiComuneRepository.countById_AnnoRiferimentoAndStato(annoCalcolo, StatoComune.SCARTATO);

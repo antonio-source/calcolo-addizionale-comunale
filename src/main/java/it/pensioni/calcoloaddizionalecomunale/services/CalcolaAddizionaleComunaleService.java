@@ -10,13 +10,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.transaction.Transactional;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -40,8 +42,23 @@ public class CalcolaAddizionaleComunaleService {
     @Autowired
     private AliquotaFasciaRepository aliquotaFasciaRepository;
 
-    @Transactional
-    public void caricaFileAliquotePerAnno(int annoCalcolo) {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private void cleanupDatabase(int annoRiferimento) {
+        log.info("Cleaning up database tables before loading new data for year: " + annoRiferimento + "...");
+        // Esegui le cancellazioni in ordine inverso rispetto alle dipendenze delle chiavi esterne
+        jdbcTemplate.execute("DELETE FROM aliquota_fascia WHERE anno_riferimento = " + annoRiferimento);
+        jdbcTemplate.execute("DELETE FROM dati_comune WHERE anno_riferimento = " + annoRiferimento);
+        jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali WHERE anno_riferimento = " + annoRiferimento);
+        log.info("Database cleanup complete for year: " + annoRiferimento + ".");
+    }
+
+    @javax.transaction.Transactional(value = Transactional.TxType.REQUIRED, rollbackOn = RuntimeException.class)
+    public List<DatiComune> caricaFileAliquotePerAnno(int annoCalcolo, String codiceCatastale) {
+        cleanupDatabase(annoCalcolo);
+
+        List<DatiComune> listaComuni = new ArrayList<>();
         String NOME_FILE = "Add_comunale_irpef" + annoCalcolo + ".csv";
         ClassPathResource resource = new ClassPathResource("csv/aliquote-addizionali-comunali/" + NOME_FILE);
 
@@ -56,8 +73,7 @@ public class CalcolaAddizionaleComunaleService {
 
                 if (campi.length >= NUMERO_MINIMO_COLONNE) {
                     DatiComuneId comuneId = new DatiComuneId(annoCalcolo, campi[0]);
-                    DatiComune comune = datiComuneRepository.findById(comuneId).orElse(new DatiComune());
-                    comune.setId(comuneId);
+                    DatiComune comune = datiComuneRepository.findById(comuneId).orElse(new DatiComune(comuneId));
                     comune.setComune(campi[1]);
                     comune.setMultiAliq("SI".equalsIgnoreCase(campi[7]));
 
@@ -72,7 +88,7 @@ public class CalcolaAddizionaleComunaleService {
                     String aliquotaStr = campi[8].trim();
                     if (aliquotaStr.equalsIgnoreCase("0*")) {
                         comune.setStato(StatoComune.SCARTATO);
-                        datiComuneRepository.save(comune);
+                        listaComuni.add(comune);
                         continue;
                     }
 
@@ -86,7 +102,14 @@ public class CalcolaAddizionaleComunaleService {
                     }
 
                     if (comune.isMultiAliq()) {
-                        for (int i = 10; i <= 32; i += 2) {
+                        int startIndex = 10;
+                        int endIndex   = 32;
+                        double aliDouble = Double.valueOf(aliquotaStr);
+                        if (aliDouble > 0.0) {
+                            startIndex = 8;
+                            endIndex   = 30;
+                        }
+                        for (int i = startIndex; i <= endIndex; i += 2) {
                             try {
                                 if (i < campi.length && !campi[i].trim().isEmpty()) {
                                     AliquotaFasciaId afId = new AliquotaFasciaId();
@@ -127,14 +150,18 @@ public class CalcolaAddizionaleComunaleService {
                             }
                         } catch (NumberFormatException ignored) {}
                     }
-                    datiComuneRepository.save(comune);
+                    listaComuni.add(comune);
                 }
             }
+            System.out.println("Comuni size: " + listaComuni.size());
+            this.datiComuneRepository.saveAll(listaComuni);
+            return  listaComuni;
         } catch (IOException e) {
             log.error("IOException: {}", e.toString(), e);
             FileAliquoteAddizionaliComunali file = new FileAliquoteAddizionaliComunali(annoCalcolo);
             file.setAnomalia("Impossibile caricare il file " + NOME_FILE);
             fileAliquoteAddizionaliComunaliRepository.save(file);
+            return listaComuni;
         }
     }
 
