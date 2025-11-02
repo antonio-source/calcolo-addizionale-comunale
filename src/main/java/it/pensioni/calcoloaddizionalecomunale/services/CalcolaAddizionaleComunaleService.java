@@ -4,6 +4,8 @@ import it.pensioni.calcoloaddizionalecomunale.dto.*;
 import it.pensioni.calcoloaddizionalecomunale.repositories.AliquotaFasciaRepository;
 import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
 import it.pensioni.calcoloaddizionalecomunale.repositories.FileAliquoteAddizionaliComunaliRepository;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -202,12 +205,43 @@ public class CalcolaAddizionaleComunaleService {
             log.info("----- COMUNE: {} - CALCOLO ALIQUOTA UNICA -----", comune.getId().getCodiceCatastale());
             log.info("    REDDITO IMPONIBILE: {}", redditoImponibile);
             if (redditoImponibile > comune.getEsenzioneReddito()) {
-                addizionaleTotale = redditoImponibile * comune.getAliquote().get(0).getAliquota() / 100;
-                log.info("    ALIQUOTA: {} - IMPOSTA CALCOLATA: {}", comune.getAliquote().get(0).getAliquota(), addizionaleTotale);
+                if (!comune.getAliquote().isEmpty()) {
+                    addizionaleTotale = redditoImponibile * comune.getAliquote().get(0).getAliquota() / 100;
+                    log.info("    ALIQUOTA: {} - IMPOSTA CALCOLATA: {}", comune.getAliquote().get(0).getAliquota(), addizionaleTotale);
+                } else {
+                    addizionaleTotale = 0;
+                    log.info("    ATTENZIONE COMUNE CONFIGURATO NON CORRETTAMENTE: " + comune);
+                }
             }
         }
         output.setImportoAddizionaleComunale(addizionaleTotale);
         output.setImportoAccontoAddizionaleComunale(addizionaleTotale / 100 * 30);
         return output;
+    }
+
+    public String generaReportCsv(int annoCalcolo, double redditoImponibile) throws IOException {
+        List<DatiComune> comuni = datiComuneRepository.findById_AnnoRiferimentoAndStatoWithAliquote(annoCalcolo, StatoComune.IMPLEMENTATO);
+
+        StringWriter stringWriter = new StringWriter();
+        
+        CSVFormat format = CSVFormat.EXCEL
+            .withHeader("Anno", "Codice Catastale", "Comune", "Reddito Imponibile", "Addizionale Calcolata", "Acconto Addizionale")
+            .withDelimiter(';');
+
+        try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, format)) {
+            for (DatiComune comune : comuni) {
+                AddizionaleComunale risultato = calcolaAddizionale(annoCalcolo, comune, redditoImponibile);
+                csvPrinter.printRecord(
+                    risultato.getAnnoRiferimento(),
+                    risultato.getCodiceCatastale(),
+                    (risultato.getComune() != null) ? risultato.getComune().getComune() : "",
+                    risultato.getRedditoImponibile(),
+                    risultato.getImportoAddizionaleComunale(),
+                    risultato.getImportoAccontoAddizionaleComunale()
+                );
+            }
+        }
+
+        return stringWriter.toString();
     }
 }

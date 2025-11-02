@@ -15,6 +15,9 @@ public interface DatiComuneRepository extends PagingAndSortingRepository<DatiCom
 
     long countById_AnnoRiferimentoAndStato(int annoRiferimento, StatoComune stato);
 
+    @Query("SELECT DISTINCT dc FROM DatiComune dc LEFT JOIN FETCH dc.aliquote WHERE dc.id.annoRiferimento = :annoRiferimento AND dc.stato = :stato")
+    List<DatiComune> findById_AnnoRiferimentoAndStatoWithAliquote(@Param("annoRiferimento") int annoRiferimento, @Param("stato") StatoComune stato);
+
     List<DatiComune> findById_AnnoRiferimentoAndStato(int annoRiferimento, StatoComune stato);
 
 }
