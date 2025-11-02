@@ -1,13 +1,19 @@
 package it.pensioni.calcoloaddizionalecomunale.dto;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import javax.persistence.CascadeType;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 
 @Entity
@@ -30,7 +36,7 @@ public class DatiComune implements Serializable {
 
     private double esenzioneReddito; // Importo massimo del reddito imponibile esente
 
-    @OneToMany(mappedBy = "datiComune", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "datiComune", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<AliquotaFascia> aliquote = new ArrayList<>();
 

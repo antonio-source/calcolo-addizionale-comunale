@@ -1,19 +1,5 @@
 package it.pensioni.calcoloaddizionalecomunale.services;
 
-import it.pensioni.calcoloaddizionalecomunale.dto.*;
-import it.pensioni.calcoloaddizionalecomunale.repositories.AliquotaFasciaRepository;
-import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
-import it.pensioni.calcoloaddizionalecomunale.repositories.FileAliquoteAddizionaliComunaliRepository;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,6 +9,30 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
+
+import it.pensioni.calcoloaddizionalecomunale.dto.AddizionaleComunale;
+import it.pensioni.calcoloaddizionalecomunale.dto.AliquotaFascia;
+import it.pensioni.calcoloaddizionalecomunale.dto.AliquotaFasciaId;
+import it.pensioni.calcoloaddizionalecomunale.dto.DatiComune;
+import it.pensioni.calcoloaddizionalecomunale.dto.DatiComuneId;
+import it.pensioni.calcoloaddizionalecomunale.dto.FileAliquoteAddizionaliComunali;
+import it.pensioni.calcoloaddizionalecomunale.dto.StatoComune;
+import it.pensioni.calcoloaddizionalecomunale.repositories.AliquotaFasciaRepository;
+import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
+import it.pensioni.calcoloaddizionalecomunale.repositories.FileAliquoteAddizionaliComunaliRepository;
 
 @Service
 public class CalcolaAddizionaleComunaleService {
@@ -55,8 +65,10 @@ public class CalcolaAddizionaleComunaleService {
     }
 
     @javax.transaction.Transactional(value = Transactional.TxType.REQUIRED, rollbackOn = RuntimeException.class)
-    public List<DatiComune> caricaFileAliquotePerAnno(int annoCalcolo, String codiceCatastale) {
-        cleanupDatabase(annoCalcolo);
+    public List<DatiComune> caricaFileAliquotePerAnno(int annoCalcolo, String codiceCatastaleInput) {
+    	if (ObjectUtils.isEmpty(codiceCatastaleInput)) {
+    		cleanupDatabase(annoCalcolo);
+    	}
 
         List<DatiComune> listaComuni = new ArrayList<>();
         String NOME_FILE = "Add_comunale_irpef" + annoCalcolo + ".csv";
@@ -72,7 +84,12 @@ public class CalcolaAddizionaleComunaleService {
                 String[] campi = cleanedLine.split(DELIMITATORE, -1);
 
                 if (campi.length >= NUMERO_MINIMO_COLONNE) {
-                    DatiComuneId comuneId = new DatiComuneId(annoCalcolo, campi[0]);
+                	String codiceCatastale = campi[0];
+                	if (!ObjectUtils.isEmpty(codiceCatastaleInput)
+                			&& !codiceCatastale.equalsIgnoreCase(codiceCatastaleInput)) {
+                		continue;
+                	}
+                    DatiComuneId comuneId = new DatiComuneId(annoCalcolo, codiceCatastale);
                     DatiComune comune = datiComuneRepository.findById(comuneId).orElse(new DatiComune(comuneId));
                     comune.setComune(campi[1]);
                     comune.setMultiAliq("SI".equalsIgnoreCase(campi[7]));
@@ -173,18 +190,26 @@ public class CalcolaAddizionaleComunaleService {
             double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
             afId.setLimiteMin(limiteMinimo);
         } else {
-            pattern = Pattern.compile("da euro ([\\d\\.]+) fino a euro ([\\d\\.]+)");
+        	pattern = Pattern.compile("fino ad euro ([\\d\\.]+)");
             matcher = pattern.matcher(fasciaDesc);
             if (matcher.find()) {
-                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
-                afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+                afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+                double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+                afId.setLimiteMin(limiteMinimo);
             } else {
-                pattern = Pattern.compile("oltre euro ([\\d\\.]+)");
-                matcher = pattern.matcher(fasciaDesc);
-                if (matcher.find()) {
-                    afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
-                    afId.setLimiteMax(Double.MAX_VALUE);
-                }
+	            pattern = Pattern.compile("da euro ([\\d\\.]+) fino a euro ([\\d\\.]+)");
+	            matcher = pattern.matcher(fasciaDesc);
+	            if (matcher.find()) {
+	                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+	                afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+	            } else {
+	                pattern = Pattern.compile("oltre euro ([\\d\\.]+)");
+	                matcher = pattern.matcher(fasciaDesc);
+	                if (matcher.find()) {
+	                    afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+	                    afId.setLimiteMax(Double.MAX_VALUE);
+	                }
+	            }
             }
         }
     }
@@ -215,9 +240,33 @@ public class CalcolaAddizionaleComunaleService {
         if (comune.isMultiAliq()) {
             log.info("----- COMUNE: {} - CALCOLO MULTIALQUOTA -----", comune.getId().getCodiceCatastale());
             log.info("    REDDITO IMPONIBILE: {}", redditoImponibile);
-            for (AliquotaFascia af : comune.getAliquote()) {
-                if (redditoImponibile > af.getId().getLimiteMin()) {
-                    double baseImponibileFascia = Math.min(redditoImponibile, af.getId().getLimiteMax()) - af.getId().getLimiteMin();
+            List<AliquotaFascia> listaAliquote = comune.getAliquote().stream().
+            		sorted((a1,a2) -> {
+						             if (a1.getId().getLimiteMin() < a2.getId().getLimiteMin()) {
+						            	 return -1;
+						             }
+						             else if (a1.getId().getLimiteMin() == a2.getId().getLimiteMin()) {
+						            	 return 0;
+						             }
+						             else {
+						            	 return 1;
+						             }
+						            })
+            		.collect(Collectors.toList());
+            
+            for (AliquotaFascia af : listaAliquote) {
+                if (redditoImponibile > af.getId().getLimiteMin() && redditoImponibile > af.getId().getLimiteMax()) {
+                	double baseImponibileFascia = af.getId().getLimiteMax();
+                    if (af.getId().getLimiteMin() == 0.0) {
+                        baseImponibileFascia -= comune.getEsenzioneReddito();
+                    }
+                    if (baseImponibileFascia > 0) {
+                        double quotaFascia = (baseImponibileFascia * af.getAliquota() / 100);
+                        addizionaleTotale += quotaFascia;
+                        log.info("    FASCIA MIN: {} - MAX: {} - ALIQUOTA: {} - BASE IMPONIBILE: {} - QUOTA FASCIA: {}", af.getId().getLimiteMin(), af.getId().getLimiteMax(), af.getAliquota(), baseImponibileFascia, quotaFascia);
+                    }
+                } else if (redditoImponibile > af.getId().getLimiteMin() && redditoImponibile <= af.getId().getLimiteMax()) {
+                    double baseImponibileFascia = redditoImponibile - af.getId().getLimiteMin();
                     if (af.getId().getLimiteMin() == 0.0) {
                         baseImponibileFascia -= comune.getEsenzioneReddito();
                     }
@@ -247,28 +296,43 @@ public class CalcolaAddizionaleComunaleService {
     }
 
     public String generaReportCsv(int annoCalcolo, double redditoImponibile) throws IOException {
-        List<DatiComune> comuni = datiComuneRepository.findById_AnnoRiferimentoAndStatoWithAliquote(annoCalcolo, StatoComune.IMPLEMENTATO);
+        List<DatiComune> comuni = datiComuneRepository.findById_AnnoRiferimentoAndStato(annoCalcolo, StatoComune.IMPLEMENTATO)
+        		                                      .stream()
+        		                                      .sorted((d1, d2) -> {
+        		                                    			  return d1.getId().getCodiceCatastale().compareTo(d2.getId().getCodiceCatastale());
+        		                                      }
+        		                                     ).collect(Collectors.toList());
 
         StringWriter stringWriter = new StringWriter();
         
-        CSVFormat format = CSVFormat.EXCEL
-            .withHeader("Anno", "Codice Catastale", "Comune", "Reddito Imponibile", "Addizionale Calcolata", "Acconto Addizionale")
-            .withDelimiter(';');
+        CSVFormat format = CSVFormat.EXCEL.builder()
+            .setHeader("Anno", "Codice Catastale", "Comune", "Reddito Imponibile", "Addizionale Calcolata", "Acconto Addizionale")
+            .setDelimiter(';')
+            .build();
 
         try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, format)) {
             for (DatiComune comune : comuni) {
+            	if (comune.getId().getCodiceCatastale().equals("A034")) {
+            		System.err.println("DEBUG");
+            	}
                 AddizionaleComunale risultato = calcolaAddizionale(annoCalcolo, comune, redditoImponibile);
                 csvPrinter.printRecord(
                     risultato.getAnnoRiferimento(),
                     risultato.getCodiceCatastale(),
                     (risultato.getComune() != null) ? risultato.getComune().getComune() : "",
-                    risultato.getRedditoImponibile(),
-                    risultato.getImportoAddizionaleComunale(),
-                    risultato.getImportoAccontoAddizionaleComunale()
+                    formattaImporti(risultato.getRedditoImponibile()),
+                    formattaImporti(risultato.getImportoAddizionaleComunale()),
+                    formattaImporti(risultato.getImportoAccontoAddizionaleComunale())
                 );
             }
         }
 
         return stringWriter.toString();
     }
+    
+    private String formattaImporti(double importo) {
+    	return Double.toString(importo).replaceAll("\\.", ",");
+    }
+    
+    
 }

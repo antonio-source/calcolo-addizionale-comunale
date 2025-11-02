@@ -1,29 +1,28 @@
 package it.pensioni.calcoloaddizionalecomunale.runner;
 
-import it.pensioni.calcoloaddizionalecomunale.services.CalcolaAddizionaleComunaleService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.transaction.Transactional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.transaction.Transactional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import it.pensioni.calcoloaddizionalecomunale.services.CalcolaAddizionaleComunaleService;
 
 @Component
 public class DataLoaderRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataLoaderRunner.class);
     private final CalcolaAddizionaleComunaleService service;
-    private final JdbcTemplate jdbcTemplate;
-
-    public DataLoaderRunner(CalcolaAddizionaleComunaleService service, JdbcTemplate jdbcTemplate) {
+    
+    public DataLoaderRunner(CalcolaAddizionaleComunaleService service) {
         this.service = service;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override

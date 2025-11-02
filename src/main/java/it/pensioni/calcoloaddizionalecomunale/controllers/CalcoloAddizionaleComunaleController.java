@@ -1,13 +1,10 @@
 package it.pensioni.calcoloaddizionalecomunale.controllers;
 
-import it.pensioni.calcoloaddizionalecomunale.dto.AddizionaleComunale;
-import it.pensioni.calcoloaddizionalecomunale.dto.DatiComune;
-import it.pensioni.calcoloaddizionalecomunale.dto.StatoComune;
-import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
-import it.pensioni.calcoloaddizionalecomunale.services.CalcolaAddizionaleComunaleService;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,8 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.util.List;
+import it.pensioni.calcoloaddizionalecomunale.dto.AddizionaleComunale;
+import it.pensioni.calcoloaddizionalecomunale.dto.DatiComune;
+import it.pensioni.calcoloaddizionalecomunale.dto.StatoComune;
+import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
+import it.pensioni.calcoloaddizionalecomunale.services.CalcolaAddizionaleComunaleService;
 
 @RestController
 @RequestMapping(value = "v1/api/addizionale-comunale")
@@ -25,7 +25,7 @@ public class CalcoloAddizionaleComunaleController {
     private final CalcolaAddizionaleComunaleService calcolaAddizionaleComunaleService;
     private final DatiComuneRepository datiComuneRepository;
 
-    @Autowired
+    
     public CalcoloAddizionaleComunaleController(CalcolaAddizionaleComunaleService calcolaAddizionaleComunaleService, DatiComuneRepository datiComuneRepository) {
         this.calcolaAddizionaleComunaleService = calcolaAddizionaleComunaleService;
         this.datiComuneRepository = datiComuneRepository;
@@ -37,8 +37,13 @@ public class CalcoloAddizionaleComunaleController {
     }
 
     @GetMapping("/carica-file")
-    public String caricaFileAliquotePerAnno(int annoCalcolo) {
-        calcolaAddizionaleComunaleService.caricaFileAliquotePerAnno(annoCalcolo, null);
+    public String caricaFileAliquotePerAnno(int annoCalcolo, @RequestParam(name = "codiceCatastaleInput", defaultValue = "") String codiceCatastaleInput) {
+    	
+    	if (ObjectUtils.isEmpty(codiceCatastaleInput)) {
+    		codiceCatastaleInput = null;
+    	}
+    	
+        calcolaAddizionaleComunaleService.caricaFileAliquotePerAnno(annoCalcolo, codiceCatastaleInput);
 
         long implementatiCount = datiComuneRepository.countById_AnnoRiferimentoAndStato(annoCalcolo, StatoComune.IMPLEMENTATO);
         long scartatiCount = datiComuneRepository.countById_AnnoRiferimentoAndStato(annoCalcolo, StatoComune.SCARTATO);

@@ -7,7 +7,12 @@ import java.util.Objects;
 @Embeddable
 public class DatiComuneId implements Serializable {
 
-    private int annoRiferimento;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	private int annoRiferimento;
     private String codiceCatastale;
 
     public DatiComuneId() {
