@@ -32,6 +32,7 @@ public class AddizionaleComunale implements Serializable {
 		super();
 		this.annoRiferimento   = annoRiferimento;
 		this.codiceCatastale   = codiceCatastale;
+		this.comune            = comune;
 		this.redditoImponibile = redditoImponibile;
 	}
 	

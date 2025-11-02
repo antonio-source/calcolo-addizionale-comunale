@@ -40,7 +40,7 @@ public class CalcoloAddizionaleComunaleController {
 			if (!fileAliquoteAddizionali.getListaDatiComuniScartati().isEmpty()) {
 				output.append("------------------------------ ELENCO COMUNI SCARTATI: ------------------------------").append("\n");
 	    		for (DatiComune comune : fileAliquoteAddizionali.getListaDatiComuniScartati()) {
-	    			output.append("CODICE CATASTALE: ").append(comune.getCodiceCatastale()).append(" - NOME: ").append(comune.getComune()).append("\n");
+	    			output.append("CODICE CATASTALE: ").append(comune.getId().getCodiceCatastale()).append(" - NOME: ").append(comune.getComune()).append("\n");
 	    		}
 	    		output.append("-------------------------------------------------------------------------------------").append("\n");
 	    		output.append("-").append("\n");
