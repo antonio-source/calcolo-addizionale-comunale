@@ -4,7 +4,6 @@ import it.pensioni.calcoloaddizionalecomunale.dto.*;
 import it.pensioni.calcoloaddizionalecomunale.repositories.AliquotaFasciaRepository;
 import it.pensioni.calcoloaddizionalecomunale.repositories.DatiComuneRepository;
 import it.pensioni.calcoloaddizionalecomunale.repositories.FileAliquoteAddizionaliComunaliRepository;
-import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -40,15 +38,11 @@ public class CalcolaAddizionaleComunaleService {
     private AliquotaFasciaRepository aliquotaFasciaRepository;
 
     @Transactional
-    public FileAliquoteAddizionaliComunali caricaFileAliquotePerAnno(int annoCalcolo) {
+    public void caricaFileAliquotePerAnno(int annoCalcolo) {
         String NOME_FILE = "Add_comunale_irpef" + annoCalcolo + ".csv";
         ClassPathResource resource = new ClassPathResource("csv/aliquote-addizionali-comunali/" + NOME_FILE);
 
-        FileAliquoteAddizionaliComunali file = fileAliquoteAddizionaliComunaliRepository.findById(annoCalcolo)
-                .orElse(new FileAliquoteAddizionaliComunali(annoCalcolo, new ArrayList<>(), new ArrayList<>()));
-
-        List<DatiComune> listaDatiComuniImplementati = file.getListaDatiComuniImplementati();
-        List<DatiComune> listaDatiComuniScartati = file.getListaDatiComuniScartati();
+        fileAliquoteAddizionaliComunaliRepository.save(new FileAliquoteAddizionaliComunali(annoCalcolo));
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
             String line = br.readLine(); // Salta intestazione
@@ -64,6 +58,7 @@ public class CalcolaAddizionaleComunaleService {
                     comune.setComune(campi[1]);
                     comune.setMultiAliq("SI".equalsIgnoreCase(campi[7]));
 
+                    // Correzione per comuni che sono falsamente multi-aliquota
                     if (comune.isMultiAliq()) {
                         String descAliquota = campi[11].trim();
                         if (descAliquota.equalsIgnoreCase("Aliquota Unica")) {
@@ -73,11 +68,12 @@ public class CalcolaAddizionaleComunaleService {
 
                     String aliquotaStr = campi[8].trim();
                     if (aliquotaStr.equalsIgnoreCase("0*")) {
-                        if (!listaDatiComuniScartati.contains(comune)) {
-                            listaDatiComuniScartati.add(comune);
-                        }
+                        comune.setStato(StatoComune.SCARTATO);
+                        datiComuneRepository.save(comune);
                         continue;
                     }
+
+                    comune.setStato(StatoComune.IMPLEMENTATO);
 
                     try {
                         String esenzioneStr = campi[INDICE_IMPORTO_ESENTE].trim();
@@ -110,13 +106,13 @@ public class CalcolaAddizionaleComunaleService {
                     } else {
                         try {
                             double aliquotaDouble = Double.parseDouble(aliquotaStr.replace("*", ""));
+                            // Correzione per aliquota unica che è zero ma ha un valore nel campo successivo
                             if (aliquotaDouble == 0.0) {
                                 String descAliquota = campi[11].trim();
                                 if (descAliquota.equalsIgnoreCase("Aliquota Unica")) {
                                     aliquotaStr = campi[10].trim();
                                     aliquotaDouble = Double.parseDouble(aliquotaStr);
                                 }
-
                             }
                             AliquotaFasciaId afId = new AliquotaFasciaId(annoCalcolo, comune.getId().getCodiceCatastale(), 0.0, Double.MAX_VALUE);
                             AliquotaFascia af = aliquotaFasciaRepository.findById(afId).orElse(new AliquotaFascia());
@@ -128,19 +124,14 @@ public class CalcolaAddizionaleComunaleService {
                             }
                         } catch (NumberFormatException ignored) {}
                     }
-
-                    if (!listaDatiComuniImplementati.contains(comune)) {
-                        listaDatiComuniImplementati.add(comune);
-                    }
+                    datiComuneRepository.save(comune);
                 }
             }
-            file = this.fileAliquoteAddizionaliComunaliRepository.save(file);
-            return file;
         } catch (IOException e) {
             log.error("IOException: {}", e.toString(), e);
+            FileAliquoteAddizionaliComunali file = new FileAliquoteAddizionaliComunali(annoCalcolo);
             file.setAnomalia("Impossibile caricare il file " + NOME_FILE);
-            file = this.fileAliquoteAddizionaliComunaliRepository.save(file);
-            return file;
+            fileAliquoteAddizionaliComunaliRepository.save(file);
         }
     }
 
@@ -169,24 +160,23 @@ public class CalcolaAddizionaleComunaleService {
     }
 
     public AddizionaleComunale calcolaAddizionaleComunale(int annoCalcolo, String codiceCatastale, double redditoImponibile) {
-        Optional<DatiComune> datiComuneOpt = datiComuneRepository.findImplementatoByAnnoAndCodiceCatastale(annoCalcolo, codiceCatastale);
+        Optional<DatiComune> datiComuneOpt = datiComuneRepository.findById(new DatiComuneId(annoCalcolo, codiceCatastale));
 
         if (datiComuneOpt.isPresent()) {
-            return calcolaAddizionale(annoCalcolo, datiComuneOpt.get(), redditoImponibile);
-        } else {
-            Optional<DatiComune> datiComuneScartatoOpt = datiComuneRepository.findScartatoByAnnoAndCodiceCatastale(annoCalcolo, codiceCatastale);
-            if (datiComuneScartatoOpt.isPresent()) {
-                DatiComune datiComuneScartato = datiComuneScartatoOpt.get();
-                return new AddizionaleComunale(annoCalcolo, datiComuneScartato.getId().getCodiceCatastale(), datiComuneScartato.getComune(), "Il comune indicato rientra fra quelli non implementati (ALIQUOTA = 0*)");
-            } else {
-                throw new RuntimeException("Impossibile trovare le regole per il codice catastale: " + codiceCatastale + " nel file dell'anno: " + annoCalcolo);
+            DatiComune comune = datiComuneOpt.get();
+            if (comune.getStato() == StatoComune.SCARTATO) {
+                return new AddizionaleComunale(annoCalcolo, comune, "Il comune indicato rientra fra quelli non implementati (ALIQUOTA = 0*)");
             }
+            return calcolaAddizionale(annoCalcolo, comune, redditoImponibile);
+        } else {
+            throw new RuntimeException("Impossibile trovare le regole per il codice catastale: " + codiceCatastale + " nel file dell'anno: " + annoCalcolo);
         }
     }
 
     private AddizionaleComunale calcolaAddizionale(int annoCalcolo, DatiComune comune, double redditoImponibile) {
-        AddizionaleComunale output = new AddizionaleComunale(annoCalcolo, comune.getId().getCodiceCatastale(), comune.getComune(), redditoImponibile);
+        AddizionaleComunale output = new AddizionaleComunale(annoCalcolo, comune, redditoImponibile);
         if (redditoImponibile <= comune.getEsenzioneReddito()) {
+            log.info("----- COMUNE: {} - ESENZIONE TOTALE APPLICATA -----", comune.getId().getCodiceCatastale());
             return output;
         }
 
@@ -209,8 +199,11 @@ public class CalcolaAddizionaleComunaleService {
                 }
             }
         } else {
+            log.info("----- COMUNE: {} - CALCOLO ALIQUOTA UNICA -----", comune.getId().getCodiceCatastale());
+            log.info("    REDDITO IMPONIBILE: {}", redditoImponibile);
             if (redditoImponibile > comune.getEsenzioneReddito()) {
                 addizionaleTotale = redditoImponibile * comune.getAliquote().get(0).getAliquota() / 100;
+                log.info("    ALIQUOTA: {} - IMPOSTA CALCOLATA: {}", comune.getAliquote().get(0).getAliquota(), addizionaleTotale);
             }
         }
         output.setImportoAddizionaleComunale(addizionaleTotale);

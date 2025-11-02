@@ -1,9 +1,8 @@
 package it.pensioni.calcoloaddizionalecomunale.dto;
 
-import javax.persistence.CascadeType;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +22,15 @@ public class DatiComune implements Serializable {
 
     private String comune;
 
+    @Enumerated(EnumType.STRING)
+    private StatoComune stato;
+
     private boolean multiAliq;
 
     private double esenzioneReddito; // Importo massimo del reddito imponibile esente
 
     @OneToMany(mappedBy = "datiComune", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<AliquotaFascia> aliquote = new ArrayList<>();
 
     public DatiComune() {
@@ -43,37 +46,45 @@ public class DatiComune implements Serializable {
         this.id = id;
     }
 
-	public String getComune() {
-		return comune;
-	}
+    public String getComune() {
+        return comune;
+    }
 
-	public void setComune(String comune) {
-		this.comune = comune;
-	}
+    public void setComune(String comune) {
+        this.comune = comune;
+    }
 
-	public boolean isMultiAliq() {
-		return multiAliq;
-	}
+    public StatoComune getStato() {
+        return stato;
+    }
 
-	public void setMultiAliq(boolean multiAliq) {
-		this.multiAliq = multiAliq;
-	}
+    public void setStato(StatoComune stato) {
+        this.stato = stato;
+    }
 
-	public double getEsenzioneReddito() {
-		return esenzioneReddito;
-	}
+    public boolean isMultiAliq() {
+        return multiAliq;
+    }
 
-	public void setEsenzioneReddito(double esenzioneReddito) {
-		this.esenzioneReddito = esenzioneReddito;
-	}
+    public void setMultiAliq(boolean multiAliq) {
+        this.multiAliq = multiAliq;
+    }
 
-	public List<AliquotaFascia> getAliquote() {
-		return aliquote;
-	}
+    public double getEsenzioneReddito() {
+        return esenzioneReddito;
+    }
 
-	public void setAliquote(List<AliquotaFascia> aliquote) {
-		this.aliquote = aliquote;
-	}
+    public void setEsenzioneReddito(double esenzioneReddito) {
+        this.esenzioneReddito = esenzioneReddito;
+    }
+
+    public List<AliquotaFascia> getAliquote() {
+        return aliquote;
+    }
+
+    public void setAliquote(List<AliquotaFascia> aliquote) {
+        this.aliquote = aliquote;
+    }
 
     @Override
     public boolean equals(Object o) {

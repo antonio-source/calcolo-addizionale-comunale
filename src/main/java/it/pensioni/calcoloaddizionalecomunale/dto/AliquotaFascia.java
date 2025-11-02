@@ -1,5 +1,7 @@
 package it.pensioni.calcoloaddizionalecomunale.dto;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -20,6 +22,7 @@ public class AliquotaFascia {
         @JoinColumn(name = "annoRiferimento", referencedColumnName = "annoRiferimento", insertable = false, updatable = false),
         @JoinColumn(name = "codiceCatastale", referencedColumnName = "codiceCatastale", insertable = false, updatable = false)
     })
+    @JsonBackReference
     private DatiComune datiComune;
 
     public AliquotaFascia() {

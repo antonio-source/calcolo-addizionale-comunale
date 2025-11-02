@@ -73,11 +73,9 @@ public class DataLoaderRunner implements CommandLineRunner {
     private void cleanupDatabase() {
         log.info("Cleaning up database tables before loading new data...");
         // Esegui le cancellazioni in ordine inverso rispetto alle dipendenze delle chiavi esterne
-        jdbcTemplate.execute("DELETE FROM file_comuni_implementati");
-        jdbcTemplate.execute("DELETE FROM file_comuni_scartati");
         jdbcTemplate.execute("DELETE FROM aliquota_fascia");
-        jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali");
         jdbcTemplate.execute("DELETE FROM dati_comune");
+        jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali");
         log.info("Database cleanup complete.");
     }
 }

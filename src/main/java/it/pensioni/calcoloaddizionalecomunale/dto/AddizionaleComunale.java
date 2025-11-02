@@ -13,8 +13,8 @@ public class AddizionaleComunale implements Serializable {
 	private int    annoRiferimento;
 	
 	private String codiceCatastale;
-	
-	private String comune;
+
+    private DatiComune comune;
 	
 	private double redditoImponibile;
 
@@ -28,19 +28,23 @@ public class AddizionaleComunale implements Serializable {
 		super();
 	}
 	
-	public AddizionaleComunale(int annoRiferimento, String codiceCatastale, String comune, double redditoImponibile) {
+	public AddizionaleComunale(int annoRiferimento, DatiComune comune, double redditoImponibile) {
 		super();
 		this.annoRiferimento   = annoRiferimento;
-		this.codiceCatastale   = codiceCatastale;
 		this.comune            = comune;
+        if (this.comune != null)  {
+            this.codiceCatastale = this.comune.getId().getCodiceCatastale();
+        }
 		this.redditoImponibile = redditoImponibile;
 	}
 	
-	public AddizionaleComunale(int annoRiferimento, String codiceCatastale, String comune, String anomalia) {
+	public AddizionaleComunale(int annoRiferimento, DatiComune comune, String anomalia) {
 		super();
 		this.annoRiferimento   = annoRiferimento;
-		this.codiceCatastale   = codiceCatastale;
 		this.comune            = comune;
+        if (this.comune != null)  {
+            this.codiceCatastale = this.comune.getId().getCodiceCatastale();
+        }
 		this.anomalia          = anomalia;
 	}
 
@@ -60,12 +64,15 @@ public class AddizionaleComunale implements Serializable {
 		this.codiceCatastale = codiceCatastale;
 	}
 
-	public String getComune() {
+	public DatiComune getComune() {
 		return comune;
 	}
 
-	public void setComune(String comune) {
+	public void setComune(DatiComune comune) {
 		this.comune = comune;
+        if (this.comune != null)  {
+            this.codiceCatastale = this.comune.getId().getCodiceCatastale();
+        }
 	}
 
 	public double getRedditoImponibile() {
