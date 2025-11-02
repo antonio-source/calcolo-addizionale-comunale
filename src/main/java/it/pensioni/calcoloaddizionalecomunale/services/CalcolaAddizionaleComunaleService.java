@@ -64,6 +64,13 @@ public class CalcolaAddizionaleComunaleService {
                     comune.setComune(campi[1]);
                     comune.setMultiAliq("SI".equalsIgnoreCase(campi[7]));
 
+                    if (comune.isMultiAliq()) {
+                        String descAliquota = campi[11].trim();
+                        if (descAliquota.equalsIgnoreCase("Aliquota Unica")) {
+                            comune.setMultiAliq(false);
+                        }
+                    }
+
                     String aliquotaStr = campi[8].trim();
                     if (aliquotaStr.equalsIgnoreCase("0*")) {
                         if (!listaDatiComuniScartati.contains(comune)) {
