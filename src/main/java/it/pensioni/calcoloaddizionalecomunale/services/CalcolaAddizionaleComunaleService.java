@@ -65,11 +65,21 @@ public class CalcolaAddizionaleComunaleService {
         jdbcTemplate.execute("DELETE FROM file_aliquote_addizionali_comunali WHERE anno_riferimento = " + annoRiferimento);
         log.info("Database cleanup complete for year: " + annoRiferimento + ".");
     }
+    
+    private void cleanupDatabase(int annoRiferimento, String codiceCatastale) {
+        log.info("Cleaning up database tables before loading new data for year: " + annoRiferimento + "...");
+        // Esegui le cancellazioni in ordine inverso rispetto alle dipendenze delle chiavi esterne
+        jdbcTemplate.execute("DELETE FROM aliquota_fascia WHERE anno_riferimento = " + annoRiferimento + " AND codice_catastale = '" + codiceCatastale + "'");
+        jdbcTemplate.execute("DELETE FROM dati_comune WHERE anno_riferimento = " + annoRiferimento + " AND codice_catastale = '" + codiceCatastale + "'");
+        log.info("Database cleanup complete for year: " + annoRiferimento + " and codiceCatastale: " + codiceCatastale + ".");
+    }
 
     @javax.transaction.Transactional(value = Transactional.TxType.REQUIRED, rollbackOn = RuntimeException.class)
     public List<DatiComune> caricaFileAliquotePerAnno(int annoCalcolo, String codiceCatastaleInput) {
     	if (ObjectUtils.isEmpty(codiceCatastaleInput)) {
     		cleanupDatabase(annoCalcolo);
+    	} else {
+    		cleanupDatabase(annoCalcolo, codiceCatastaleInput);
     	}
 
         List<DatiComune> listaComuni = new ArrayList<>();
@@ -102,6 +112,9 @@ public class CalcolaAddizionaleComunaleService {
                         if (descAliquota.equalsIgnoreCase("Aliquota Unica")) {
                             comune.setMultiAliq(false);
                         }
+                        if (descAliquota.contains("Esenzione")) {
+                        	comune.setMultiAliq(false);
+                        }
                     }
 
                     String aliquotaStr = campi[8].trim();
@@ -110,7 +123,8 @@ public class CalcolaAddizionaleComunaleService {
                         listaComuni.add(comune);
                         continue;
                     }
-
+                    //double aliquotaCampo8 = Double.parseDouble(aliquotaStr);
+                    
                     comune.setStato(StatoComune.IMPLEMENTATO);
 
                     try {
@@ -136,8 +150,23 @@ public class CalcolaAddizionaleComunaleService {
                                     afId.setCodiceCatastale(comune.getId().getCodiceCatastale());
 
                                     String fasciaDesc = campi[i + 1].trim();
-                                    updateFasciaLimits(afId, fasciaDesc, comune.getAliquote());
-
+                                    
+                                    //Controllo se la fascia è di tipo esenzione
+                                    if (fasciaDesc.contains("Esenzione")) {
+                                    	//System.err.println("[ATTENZIONE] " + comuneId.getAnnoRiferimento() + " - " + comuneId.getCodiceCatastale() + " FASCIA DI TIPO ESENZIONE LA SALTO => " + fasciaDesc);
+                                    	continue;
+                                    }
+                                    try {
+                                    	Double.parseDouble(fasciaDesc);
+                                    	//System.err.println("[ATTENZIONE] " + comuneId.getAnnoRiferimento() + " - " + comuneId.getCodiceCatastale() + " FASCIA DI TIPO NUMERICO LA SALTO => " + fasciaDesc);
+                                    	continue;
+                                    } catch (Exception e) {
+                                    	
+                                    }
+                                    boolean esito = updateFasciaLimits(afId, fasciaDesc, comune.getAliquote());
+                                    if (!esito) {
+                                    	System.err.println("[ATTENZIONE] " + comuneId.getAnnoRiferimento() + " - " + comuneId.getCodiceCatastale() + " PROBLEMI CON IL PARSING DELLE ALIQUOTE => " + fasciaDesc);
+                                    }
                                     AliquotaFascia af = aliquotaFasciaRepository.findById(afId).orElse(new AliquotaFascia());
                                     af.setId(afId);
                                     af.setAliquota(Double.parseDouble(campi[i].trim()));
@@ -150,7 +179,7 @@ public class CalcolaAddizionaleComunaleService {
                         }
                     } else {
                         try {
-                            double aliquotaDouble = Double.parseDouble(aliquotaStr.replace("*", ""));
+                            double aliquotaDouble = Double.parseDouble(aliquotaStr);
                             // Correzione per aliquota unica che è zero ma ha un valore nel campo successivo
                             if (aliquotaDouble == 0.0) {
                                 String descAliquota = campi[11].trim();
@@ -184,37 +213,64 @@ public class CalcolaAddizionaleComunaleService {
         }
     }
 
-    private void updateFasciaLimits(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
-        Pattern pattern = Pattern.compile("fino a euro ([\\d\\.]+)");
-        Matcher matcher = pattern.matcher(fasciaDesc);
-        if (matcher.find()) {
-            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
-            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
-            afId.setLimiteMin(limiteMinimo);
-        } else {
-        	pattern = Pattern.compile("fino ad euro ([\\d\\.]+)");
-            matcher = pattern.matcher(fasciaDesc);
-            if (matcher.find()) {
-                afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
-                double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
-                afId.setLimiteMin(limiteMinimo);
-            } else {
-	            pattern = Pattern.compile("da euro ([\\d\\.]+) fino a euro ([\\d\\.]+)");
-	            matcher = pattern.matcher(fasciaDesc);
-	            if (matcher.find()) {
-	                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
-	                afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
-	            } else {
-	                pattern = Pattern.compile("oltre euro ([\\d\\.]+)");
-	                matcher = pattern.matcher(fasciaDesc);
-	                if (matcher.find()) {
-	                    afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
-	                    afId.setLimiteMax(Double.MAX_VALUE);
-	                }
-	            }
-            }
-        }
-    }
+//    private boolean updateFasciaLimitsOLD(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+//    	if ((fasciaDesc.contains("Applicabile a Scaglione")
+//    			|| fasciaDesc.contains("Applicabile a scaglione"))
+//    			&& fasciaDesc.contains("euro")) {
+//    		return updateFasciaLimitsWithParolaScaglioneEDaEuroAEuro(afId, fasciaDesc, existingFasce);
+//    	}
+//    	else if ((fasciaDesc.contains("Applicabile a Scaglione")
+//    			|| fasciaDesc.contains("Applicabile a scaglione"))
+//    			&& !fasciaDesc.contains("euro")) {
+//    		return updateFasciaLimitsWithParolaScaglioneEDaA(afId, fasciaDesc, existingFasce);
+//    	}
+//    	
+//    	Pattern pattern = null;
+//    	Matcher matcher = null;
+//    	pattern = Pattern.compile("fino a FINO A ([\\d\\.]+)");
+//        matcher = pattern.matcher(fasciaDesc);
+//        if (matcher.find()) {
+//            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+//            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+//            afId.setLimiteMin(limiteMinimo);
+//            return true;
+//        } else {
+//	    	pattern = Pattern.compile("fino a euro ([\\d\\.]+)");
+//	        matcher = pattern.matcher(fasciaDesc);
+//	        if (matcher.find()) {
+//	            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+//	            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+//	            afId.setLimiteMin(limiteMinimo);
+//	            return true;
+//	        } else {
+//	        	pattern = Pattern.compile("fino ad euro ([\\d\\.]+)");
+//	            matcher = pattern.matcher(fasciaDesc);
+//	            if (matcher.find()) {
+//	                afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+//	                double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+//	                afId.setLimiteMin(limiteMinimo);
+//	                return true;
+//	            } else {
+//		            pattern = Pattern.compile("da euro ([\\d\\.]+) fino a euro ([\\d\\.]+)");
+//		            matcher = pattern.matcher(fasciaDesc);
+//		            if (matcher.find()) {
+//		                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//		                afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+//		                return true;
+//		            } else {
+//		                pattern = Pattern.compile("oltre euro ([\\d\\.]+)");
+//		                matcher = pattern.matcher(fasciaDesc);
+//		                if (matcher.find()) {
+//		                    afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//		                    afId.setLimiteMax(Double.MAX_VALUE);
+//		                    return true;
+//		                }
+//		            }
+//	            }
+//	        }
+//        }
+//        return false;
+//    }
 
     public AddizionaleComunale calcolaAddizionaleComunale(int annoCalcolo, String codiceCatastale, double redditoImponibile) {
         Optional<DatiComune> datiComuneOpt = datiComuneRepository.findById(new DatiComuneId(annoCalcolo, codiceCatastale));
@@ -342,4 +398,188 @@ public class CalcolaAddizionaleComunaleService {
     }
     
     
+//    private boolean updateFasciaLimitsWithParolaScaglioneEDaA(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+//        Pattern pattern = Pattern.compile(" da ([\\d\\.]+) a ([\\d\\.]+)");
+//        Matcher matcher = pattern.matcher(fasciaDesc);
+//        if (matcher.find()) {
+//            afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//            afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+//            return true;
+//        } else {
+//        	pattern = Pattern.compile(" oltre ([\\d\\.]+)");
+//            matcher = pattern.matcher(fasciaDesc);
+//            if (matcher.find()) {
+//                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//                afId.setLimiteMax(Double.MAX_VALUE);
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+    
+    
+//    private boolean updateFasciaLimitsWithParolaScaglioneEDaEuroAEuro(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+//        Pattern pattern = Pattern.compile(" da euro ([\\d\\.]+) a euro ([\\d\\.]+)");
+//        Matcher matcher = pattern.matcher(fasciaDesc);
+//        if (matcher.find()) {
+//            afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//            afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+//            return true;
+//        } else {
+//        	pattern = Pattern.compile(" da euro ([\\d\\.]+) fino a euro ([\\d\\.]+)");
+//            matcher = pattern.matcher(fasciaDesc);
+//            if (matcher.find()) {
+//                afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//                afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+//                return true;
+//            } else {
+//            	  pattern = Pattern.compile(" da euro ([\\d\\.]+) fino ad euro ([\\d\\.]+)");
+//                matcher = pattern.matcher(fasciaDesc);
+//                if (matcher.find()) {
+//                    afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//                    afId.setLimiteMax(Double.parseDouble(matcher.group(2)));
+//                    return true;
+//                } else {
+//                	pattern = Pattern.compile(" oltre euro ([\\d\\.]+)");
+//                	matcher = pattern.matcher(fasciaDesc);
+//                	if (matcher.find()) {
+//                		afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+//                		afId.setLimiteMax(Double.MAX_VALUE);
+//                		return true;
+//                	} else {
+//                		pattern = Pattern.compile(" di reddito fino a euro ([\\d\\.]+)");
+//                		matcher = pattern.matcher(fasciaDesc);
+//                		if (matcher.find()) {
+//                			afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+//                			afId.setLimiteMax(0.0);
+//                			return true;
+//                		}
+//                	}
+//                }
+//            }
+//        } 
+//        return false;
+//    }
+    
+    /**
+     * Valorizza l'aliquota finale che contiene le parole ' oltre euro [valore]'
+     * @param  afId
+     * @param  fasciaDesc
+     * @param  existingFasce
+     * @return aggiornata
+     */
+    private boolean updateFasciaLimits001(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+    	Pattern pattern = null;
+    	Matcher matcher = null;
+    	pattern = Pattern.compile(" oltre euro ([\\d\\.]+)");
+    	matcher = pattern.matcher(fasciaDesc);
+    	if (matcher.find()) {
+    		afId.setLimiteMin(Double.parseDouble(matcher.group(1)));
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	} 
+    	return false;
+    }
+    
+    
+    
+    /**
+     * Valorizza l'aliquota finale che contiene le parole ' fino a euro [valore]'
+     * @param  afId
+     * @param  fasciaDesc
+     * @param  existingFasce
+     * @return aggiornata
+     */
+    private boolean updateFasciaLimits002(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+    	Pattern pattern = null;
+    	Matcher matcher = null;
+    	pattern = Pattern.compile(" fino a euro a ([\\d\\.]+)");
+        matcher = pattern.matcher(fasciaDesc);
+        if (matcher.find()) {
+            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+            afId.setLimiteMin(limiteMinimo);
+            return true;
+        }
+    	return false;
+    }
+    private boolean updateFasciaLimits003(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+    	Pattern pattern = null;
+    	Matcher matcher = null;
+    	pattern = Pattern.compile("fino a euro  ([\\d\\.]+)");
+        matcher = pattern.matcher(fasciaDesc);
+        if (matcher.find()) {
+            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+            afId.setLimiteMin(limiteMinimo);
+            return true;
+        }
+    	return false;
+    }
+    
+    /**
+     * Valorizza l'aliquota finale che contiene le parole ' fino a euro [valore]'
+     * @param  afId
+     * @param  fasciaDesc
+     * @param  existingFasce
+     * @return aggiornata
+     */
+    private boolean updateFasciaLimits004(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+    	Pattern pattern = null;
+    	Matcher matcher = null;
+    	pattern = Pattern.compile("fino a euro ([\\d\\.]+)");
+        matcher = pattern.matcher(fasciaDesc);
+        if (matcher.find()) {
+            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+            afId.setLimiteMin(limiteMinimo);
+            return true;
+        }
+    	return false;
+    }
+    
+    private boolean updateFasciaLimits005(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+    	Pattern pattern = null;
+    	Matcher matcher = null;
+    	pattern = Pattern.compile("fino ad euro ([\\d\\.]+)");
+        matcher = pattern.matcher(fasciaDesc);
+        if (matcher.find()) {
+            afId.setLimiteMax(Double.parseDouble(matcher.group(1)));
+            double limiteMinimo = existingFasce.isEmpty() ? 0.0 : existingFasce.get(existingFasce.size() - 1).getId().getLimiteMax() + 0.01;
+            afId.setLimiteMin(limiteMinimo);
+            return true;
+        }
+    	return false;
+    }
+    
+    private boolean updateFasciaLimits(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
+//    	if (fasciaDesc.equals("Applicabile a  scaglione di reddito da euro 28000.01 fino a euro 50000.00")) {
+//    		System.out.println("DEBUG");
+//    	}
+    	if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
+    			&& fasciaDesc.contains(" oltre euro ")) {
+    		return updateFasciaLimits001(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
+    			&& fasciaDesc.contains(" fino a euro a ")) {
+    		return updateFasciaLimits002(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
+    			&& fasciaDesc.contains(" fino a euro  ")) {
+    		return updateFasciaLimits003(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
+    			&& fasciaDesc.contains(" fino a euro ")) {
+    		return updateFasciaLimits004(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.contains("Applicabile a  scaglione di reddito ") 
+    			&& fasciaDesc.contains(" fino a euro ")) {
+    		return updateFasciaLimits004(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
+    			&& fasciaDesc.contains(" fino ad euro ")) {
+    		return updateFasciaLimits005(afId, fasciaDesc, existingFasce);
+    	}
+    	return false;
+    }
 }

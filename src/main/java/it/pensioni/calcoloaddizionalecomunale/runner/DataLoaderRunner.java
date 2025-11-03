@@ -53,9 +53,11 @@ public class DataLoaderRunner implements CommandLineRunner {
                 if (matcher.find()) {
                     try {
                         int year = Integer.parseInt(matcher.group(1));
-                        log.info("-> Loading data for year: {}", year);
-                        service.caricaFileAliquotePerAnno(year, null);
-                        log.info("-> Successfully loaded data for year: {}", year);
+                        if (year >= 2025) {
+	                        log.info("-> Loading data for year: {}", year);
+	                        service.caricaFileAliquotePerAnno(year, null);
+	                        log.info("-> Successfully loaded data for year: {}", year);
+                        }
                     } catch (NumberFormatException e) {
                         log.error("Could not parse year from filename: {}", filename, e);
                     } catch (Exception e) {
