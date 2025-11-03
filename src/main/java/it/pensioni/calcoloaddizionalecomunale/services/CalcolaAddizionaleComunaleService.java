@@ -556,6 +556,7 @@ public class CalcolaAddizionaleComunaleService {
 //    	if (fasciaDesc.equals("Applicabile a  scaglione di reddito da euro 28000.01 fino a euro 50000.00")) {
 //    		System.out.println("DEBUG");
 //    	}
+    	//                       Applicabile a Scaglione da 0 a 15000.00
     	if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
     			&& fasciaDesc.contains(" oltre euro ")) {
     		return updateFasciaLimits001(afId, fasciaDesc, existingFasce);
@@ -579,6 +580,206 @@ public class CalcolaAddizionaleComunaleService {
     	else if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
     			&& fasciaDesc.contains(" fino ad euro ")) {
     		return updateFasciaLimits005(afId, fasciaDesc, existingFasce);
+    	}
+    	else if (fasciaDesc.equals("Applicabile a Scaglione da 0 a 15000.00")) {
+    		afId.setLimiteMin(0.0);
+    		afId.setLimiteMax(15000.0);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione da 28001.00 a 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.0);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione oltre 50000.00")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione da 15001.00 a 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a FINO A 15000.00")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a DA 15001.00 A 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a DAL 28001.00 A 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a OLTRE 50000.00")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a da 0 a 15000 euro")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a da 15001 a 28000 euro")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a da 28001 a 50000 euro")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a oltre 50000 euro")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a Redditi fino a € 15000.00")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.01);
+    		return true;
+    	}
+    	else if (fasciaDesc.contains("Applicabile a redditi da € 15001.00 a € 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a redditi da € 28001.00 a € 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a redditi oltre € 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a REDDITI DA 0.00 A 15000")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.01);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a REDDITI DA 15000.01 A 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a REDDITI DA 28000.01 A 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a REDDITI oltre 50000.01")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a fino a 15000€")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a oltre 15000€ fino a 28000€")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a oltre 28000€ fino a 50000€")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a oltre 50000€")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a 000 - 1500000")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a 1500100 - 2800000")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a 2800100 - 5000000")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a 50000100")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO FINO A EURO 15000.000")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.01);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 15000.01 FINO A EURO 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 28000.01 FINO A EURO 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO OLTRE EURO 50000.00")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione di reddito fino a € 15000.00")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione di reddito da € 15000.01 fino a € 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione di reddito da € 28000.01 fino a € 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a scaglione di reddito oltre € 50000.00")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a fino a euro 15000.00")) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(15000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 15000.01 FINO A EURO 28000.00")) {
+    		afId.setLimiteMin(15000.01);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 28000.01 FINO A EURO 50000.00")) {
+    		afId.setLimiteMin(28000.01);
+    		afId.setLimiteMax(50000.00);
+    		return true;
+    	}
+    	else if (fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO OLTRE EURO 50000.00")) {
+    		afId.setLimiteMin(50000.01);
+    		afId.setLimiteMax(Double.MAX_VALUE);
+    		return true;
     	}
     	return false;
     }
