@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always 
+    environment:
+      # Solo la password del super-user 'postgres'. 
+      # Se necessario, l'utente 'user' verrà creato manualmente dopo la connessione.
+      POSTGRES_PASSWORD: password
+	  
+      # Database che verrà creato e reso accessibile
+      POSTGRES_DB: add-com-pens
+	  
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
