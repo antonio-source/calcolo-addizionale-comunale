@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -331,7 +333,12 @@ public class CalcolaAddizionaleComunaleService {
     }
     
     private String formattaImporti(double importo) {
-    	return Double.toString(importo).replaceAll("\\.", ",");
+    	NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALIAN);
+    	numberFormat.setMaximumFractionDigits(2);
+    	numberFormat.setMinimumFractionDigits(2);
+    	String formattato = numberFormat.format(importo);
+    	String formattatoSenzaMigliaia = formattato.replaceAll("\\.", "");
+    	return formattatoSenzaMigliaia;
     }
     
     
