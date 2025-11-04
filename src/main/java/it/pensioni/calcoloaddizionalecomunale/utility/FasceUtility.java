@@ -31,6 +31,22 @@ public class FasceUtility {
 				|| fasciaDesc.equals("Applicabile a scaglioni di reddito FINO A EURO 15000.00")
 				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO FINO A EURO 15000.00")
 				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO FINO A € 15000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito fino a euro 15000.00")
+				|| fasciaDesc.equals("Applicabile a Scaglioni di reddito complessivo Fino a € 15000")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito fino a 15000.00 euro")
+				|| fasciaDesc.equals("Applicabile a da euro 0.00 a  euro 15000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO fino a EURO 15000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito da 0 A euro 15000")
+				|| fasciaDesc.equals("Applicabile a  scaglionE di reddito fino a euro 15000.00")
+				|| fasciaDesc.equals("Applicabile a redditi fino a 15000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito fino al 15000.00")
+				|| fasciaDesc.equals("Applicabile a REDDITI FINO a € 15000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito fino a euro15000.00")
+				|| fasciaDesc.equals("Applicabile a a scaglionE di reddito fino a euro 15000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito fino a fino a  EURO 15000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONI fino a € 15000.00")
+				|| fasciaDesc.equals("Applicabile a redditi imponibili fino a € 15000.00")
+				
 		;
 	}
 	
@@ -65,6 +81,18 @@ public class FasceUtility {
 				|| fasciaDesc.equals("Applicabile a scaglione di reddito da 15000.01 a 28000.00")
 				|| fasciaDesc.equals("Applicabile a Scaglione di reddito da euro 15000.01 fino a euro 28000.00")
 				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA € 15000.01 A € 28000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito da euro 15000.01 fino a euro 28000.00")
+				|| fasciaDesc.equals("Applicabile a Scaglioni di reddito complessivo Oltre € 15000 e fino a € 28000")
+				|| fasciaDesc.equals("Applicabile a da euro 15000.01 a euro 28000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 15000.1 fino a EURO 28000.00")
+				|| fasciaDesc.equals("Applicabile a redditi oltre 15000.00 e fino a 28000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito da 15000.01 fino a 28000.00")
+				|| fasciaDesc.equals("Applicabile a REDDITI Oltre € 15001.00 e fino a € 28000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito da  euro15000.01 fino a euro28000.00")
+				|| fasciaDesc.equals("Applicabile a a scaglionE di reddito da euro 15000.01 fino ad euro 28000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONI da € 15000.01 a € 28000")
+				|| fasciaDesc.equals("Applicabile a redditi imponibili tra € 15001.00 e € 28000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito da euro 15001.00 fino a euro 28000.00")
 		;
 	}
 	
@@ -96,6 +124,17 @@ public class FasceUtility {
 				|| fasciaDesc.equals("Applicabile a 2800000 a 5000000")
 				|| fasciaDesc.equals("Applicabile a scaglione di reddito da 28000.01 a 50000.00")
 				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA € 28000.01 A € 50000.00")
+				|| fasciaDesc.equals("Applicabile a da euro 28000.01 a euro 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito da euro 28000.01 fino a euro 50000.00")
+				|| fasciaDesc.equals("Applicabile a Scaglioni di reddito complessivo Oltre € 28000 e fino a € 50000")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO DA EURO 28000.01 fino a EURO 50000.00")
+				|| fasciaDesc.equals("Applicabile a redditi oltre 28000.00 e fino a 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito da 28000.01 fino a 50000.00")
+				|| fasciaDesc.equals("Applicabile a REDDITI Oltre € 28001.00 e fino a € 50000.00")
+				|| fasciaDesc.equals("Applicabile a A SCAGLIONE DI REDDITO DA EURO 28000.01 FINO A EURO 50000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONI da € 28000.01 a € 50000")
+				|| fasciaDesc.equals("Applicabile a redditi imponibili tra € 28001.00 e € 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito da euro 28001.00 fino a euro 50000.00")
 		;
 	}
 	
@@ -132,6 +171,18 @@ public class FasceUtility {
 				|| fasciaDesc.equals("Applicabile a scaglione di reddito OLTRE euro 50000.00")
 				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO OLTRE € 50000.00")
 				|| fasciaDesc.equals("Applicabile a scaglioni di reddito oltre euro 50000.00")
+				|| fasciaDesc.equals("Applicabile a Scaglioni di reddito complessivo Oltre € 50000")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONE DI REDDITO oltre EURO 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito oltre 50000.01")
+				|| fasciaDesc.equals("Applicabile a redditi oltre 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito oltre 50000.00")
+				|| fasciaDesc.equals("Applicabile a REDDITI Oltre € 50000")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito oltre 50000.00")
+				|| fasciaDesc.equals("Applicabile a A SCAGLIONE DI REDDITO OLTRE EURO 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglione di reddito oltre 50000.00")
+				|| fasciaDesc.equals("Applicabile a SCAGLIONI oltre € 50000")
+				|| fasciaDesc.equals("Applicabile a redditi imponibili oltre € 50000.00")
+				|| fasciaDesc.equals("Applicabile a scaglioni di reddito OLTRE EURO 50000.00")
 		;
 	}
 }
