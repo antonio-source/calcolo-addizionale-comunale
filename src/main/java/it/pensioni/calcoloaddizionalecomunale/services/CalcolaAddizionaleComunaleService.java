@@ -554,10 +554,6 @@ public class CalcolaAddizionaleComunaleService {
     }
     
     private boolean updateFasciaLimits(AliquotaFasciaId afId, String fasciaDesc, List<AliquotaFascia> existingFasce) {
-//    	if (fasciaDesc.equals("Applicabile a  scaglione di reddito da euro 28000.01 fino a euro 50000.00")) {
-//    		System.out.println("DEBUG");
-//    	}
-    	//                       Applicabile a Scaglione da 0 a 15000.00
     	if (fasciaDesc.contains("Applicabile a scaglione di reddito ") 
     			&& fasciaDesc.contains(" oltre euro ")) {
     		return updateFasciaLimits001(afId, fasciaDesc, existingFasce);
@@ -583,7 +579,7 @@ public class CalcolaAddizionaleComunaleService {
     		return updateFasciaLimits005(afId, fasciaDesc, existingFasce);
     	}
     	//---------------------------------------------------------------
-    	else if (FasceUtility.isDescrizioneFra0e15000(fasciaDesc)) {
+    	if (FasceUtility.isDescrizioneFra0e15000(fasciaDesc)) {
     		afId.setLimiteMin(0.0);
     		afId.setLimiteMax(15000.0);
     		return true;
