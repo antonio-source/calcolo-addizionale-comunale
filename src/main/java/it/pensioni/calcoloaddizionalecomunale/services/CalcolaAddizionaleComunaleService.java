@@ -589,6 +589,11 @@ public class CalcolaAddizionaleComunaleService {
     		afId.setLimiteMax(28000.00);
     		return true;
     	}
+    	else if (FasceUtility.isDescrizioneFra0e28000(fasciaDesc)) {
+    		afId.setLimiteMin(0.00);
+    		afId.setLimiteMax(28000.00);
+    		return true;
+    	}
     	else if (FasceUtility.isDescrizioneFra28000e50000(fasciaDesc)) {
     		afId.setLimiteMin(28000.01);
     		afId.setLimiteMax(50000.0);
